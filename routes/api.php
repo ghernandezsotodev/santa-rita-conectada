@@ -17,10 +17,10 @@ use Carbon\Carbon;
 use App\Models\Comunicado;
 use App\Models\Evento;
 use Illuminate\Support\Facades\URL; 
-
 use Illuminate\Support\Facades\Notification;
 use App\Services\ComunicadoService;
 use App\Services\SocioService;
+use App\Http\Controllers\Api\TransaccionController;
 
 Route::post('/login', function (Request $request) {
     $request->validate([
@@ -91,94 +91,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/directivo/socios', [SocioController::class, 'index'])->middleware('role:Presidente|Secretario|Tesorero');
 
     // --- RUTA PARA EL HISTORIAL DE TESORERÍA (APP MÓVIL) ---
-    // Ahora inyectamos la URL firmada para evitar el crash en Android
-    Route::get('/directivo/transacciones', function () {
-        
-        $transacciones = Transaccion::latest('fecha')->get();
-
-        // Transformamos la colección para generar la URL pública temporal
-        $transacciones->transform(function ($transaccion) {
-            if ($transaccion->comprobante_path) {
-                $transaccion->comprobante_path = URL::temporarySignedRoute(
-                    'comprobantes.publico', 
-                    now()->addMinutes(30),
-                    ['transaccion' => $transaccion->id]
-                );
-            }
-            return $transaccion;
-        });
-
-        return response()->json($transacciones);
-
-    })->middleware('role:Presidente|Secretario|Tesorero');
-
+    Route::get('/directivo/transacciones', [TransaccionController::class, 'index'])->middleware('role:Presidente|Secretario|Tesorero');
 
     // --- RUTA PARA CREAR UN COMUNICADO (APP MÓVIL) ---
     Route::post('/directivo/comunicados', [ComunicadoController::class, 'store']);
 
     // --- RUTA PARA EL GRÁFICO DE LA DIRECTIVA ---
-    Route::get('/charts/finances', function () {
-        $labels = [];
-        $incomeData = [];
-        $expenseData = [];
-
-        for ($i = 5; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i)->locale('es');
-            $monthName = $date->translatedFormat('F');
-            $year = $date->format('Y');
-            $labels[] = ucfirst($monthName);
-            $income = Transaccion::where('tipo', 'Ingreso')->whereYear('fecha', $year)->whereMonth('fecha', $date->month)->sum('monto');
-            $incomeData[] = $income;
-            $expense = Transaccion::where('tipo', 'Egreso')->whereYear('fecha', $year)->whereMonth('fecha', $date->month)->sum('monto');
-            $expenseData[] = $expense;
-        }
-
-        return response()->json([
-            'labels' => $labels,
-            'datasets' => [
-                ['label' => 'Ingresos', 'data' => $incomeData, 'backgroundColor' => '#4ade80'],
-                ['label' => 'Egresos', 'data' => $expenseData, 'backgroundColor' => '#f87171']
-            ]
-        ]);
-    })->middleware('role:Presidente|Tesorero');
+    Route::get('/charts/finances', [TransaccionController::class, 'financesChart'])->middleware('role:Presidente|Tesorero');
 
     // --- RUTA PARA EL GRÁFICO PERSONAL DEL SOCIO ---
-    Route::get('/charts/personal-finances', function (Request $request) {
-        $user = $request->user();
-
-        // Se usa la relación directa ---
-        $socio = $user->socio;
-
-        if (!$socio) {
-            // Usuario no tiene socio asociado (es directivo o no vinculado)
-            return response()->json(['labels' => [], 'datasets' => []], 404);
-        }
-
-        $labels = [];
-        $contributionData = [];
-
-        for ($i = 11; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i)->locale('es');
-            $monthName = $date->translatedFormat('F');
-            $year = $date->format('Y');
-            $labels[] = ucfirst($monthName);
-            $contribution = $socio->transacciones()->where('tipo', 'Ingreso')->whereYear('fecha', $year)->whereMonth('fecha', $date->month)->sum('monto');
-            $contributionData[] = $contribution;
-        }
-
-        return response()->json([
-            'labels' => $labels,
-            'datasets' => [
-                [
-                    'label' => 'Mis Aportes',
-                    'data' => $contributionData,
-                    'borderColor' => '#3b82f6',
-                    'backgroundColor' => 'rgba(59, 130, 246, 0.2)',
-                    'fill' => true,
-                    'tension' => 0.1
-                ]
-            ]
-        ]);
-    })->middleware('role:Socio');
+    Route::get('/charts/personal-finances', [AporteController::class, 'personalChart'])->middleware('role:Socio');
 
 });
