@@ -9,25 +9,55 @@ use App\Notifications\NuevoComunicadoNotification;
 use App\Notifications\PushComunicadoNotification; 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use App\Repositories\Contracts\ComunicadoRepositoryInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class ComunicadoService
 {
-    /**
-     * Centraliza el envío de notificaciones (Email y Push) para un nuevo comunicado.
-     *
-     * @param Comunicado $comunicado
-     * @return void
-     */
+    protected ComunicadoRepositoryInterface $comunicadoRepository;
+
+    public function __construct(ComunicadoRepositoryInterface $comunicadoRepository)
+    {
+        $this->comunicadoRepository = $comunicadoRepository;
+    }
+
+    public function getAllPaginated(int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->comunicadoRepository->getAllPaginated($perPage);
+    }
+
+    public function getEnviadosPaginated(int $perPage = 10): LengthAwarePaginator
+    {
+        return $this->comunicadoRepository->getEnviadosPaginated($perPage);
+    }
+
+    public function getAllWithUser(): Collection
+    {
+        return $this->comunicadoRepository->getAllWithUser();
+    }
+
+    public function create(array $data): Comunicado
+    {
+        return $this->comunicadoRepository->create($data);
+    }
+
+    public function update(Comunicado $comunicado, array $data): bool
+    {
+        return $this->comunicadoRepository->update($comunicado, $data);
+    }
+
+    public function delete(Comunicado $comunicado): bool
+    {
+        return $this->comunicadoRepository->delete($comunicado);
+    }
+
     public function enviar(Comunicado $comunicado): void
     {
-        // Marcar el comunicado como enviado (si no lo está ya)
         if (is_null($comunicado->fecha_envio)) {
-            $comunicado->update(['fecha_envio' => now()]);
+            $this->comunicadoRepository->update($comunicado, ['fecha_envio' => now()]);
         }
 
-        // --- BLOQUE 1: ENVÍO DE EMAILS (vía Socios) ---
-        // Se notifica a los modelos Socio, que tienen 'email'.
-        // NuevoComunicadoNotification ahora SOLO enviará por MailChannel.
         $sociosParaEmail = Socio::whereRaw("LOWER(estado) = 'activo'")
                                 ->whereNotNull('email')
                                 ->get();
@@ -39,9 +69,6 @@ class ComunicadoService
             Log::info('[ComunicadoService] No se encontraron socios activos con email para notificar.');
         }
 
-        // --- BLOQUE 2: ENVÍO DE PUSH (vía Users) ---
-        // Buscamos usuarios que tengan CUALQUIER rol (Socio, Presidente, etc.)
-        // PushComunicadoNotification AHORA enviará por el FcmChannel nativo.
         $usuariosParaPush = User::whereHas('roles')
                                 ->whereNotNull('fcm_token')
                                 ->get();
