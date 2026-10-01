@@ -118,23 +118,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // --- RUTA PARA CREAR UN COMUNICADO (APP MÓVIL) ---
-    Route::post('/directivo/comunicados', function (Request $request, ComunicadoService $comunicadoService) {
-        $validated = $request->validate([
-            'titulo' => 'required|string|max:255',
-            'contenido' => 'required|string',
-        ]);
-
-        $comunicado = Comunicado::create([
-            'titulo' => $validated['titulo'],
-            'contenido' => $validated['contenido'],
-            'user_id' => $request->user()->id,
-        ]);
-
-        // Toda la lógica de envío se reemplaza por el servicio ---
-        $comunicadoService->enviar($comunicado);
-
-        return response()->json($comunicado, 201); // 201 = Creado Exitosamente
-    })->middleware('role:Presidente|Secretario');
+    Route::post('/directivo/comunicados', [ComunicadoController::class, 'store']);
 
     // --- RUTA PARA EL GRÁFICO DE LA DIRECTIVA ---
     Route::get('/charts/finances', function () {
