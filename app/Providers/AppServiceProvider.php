@@ -9,6 +9,10 @@ use App\Repositories\Contracts\SocioRepositoryInterface;
 use App\Repositories\Eloquent\SocioRepository;
 use App\Repositories\Contracts\TransaccionRepositoryInterface;
 use App\Repositories\Eloquent\TransaccionRepository;
+use App\Repositories\Contracts\ActaRepositoryInterface;
+use App\Repositories\Eloquent\ActaRepository;
+use App\Repositories\Contracts\EventoRepositoryInterface;
+use App\Repositories\Eloquent\EventoRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ComunicadoRepositoryInterface::class, ComunicadoRepository::class);
         $this->app->bind(SocioRepositoryInterface::class, SocioRepository::class);
         $this->app->bind(TransaccionRepositoryInterface::class, TransaccionRepository::class);
+        $this->app->bind(ActaRepositoryInterface::class, ActaRepository::class);
+        $this->app->bind(EventoRepositoryInterface::class, EventoRepository::class);
     }
 
     public function boot(): void
