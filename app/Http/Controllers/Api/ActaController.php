@@ -1,30 +1,12 @@
 <?php
-
 namespace App\Http\Controllers\Api;
-
 use App\Http\Controllers\Controller;
-use App\Models\Acta;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\URL;
+use App\Services\ActaService;
 
-#aa
 class ActaController extends Controller
 {
-    public function index()
-    {
-        $actas = Acta::latest()->get();
+    protected ActaService $actaService;
+    public function __construct(ActaService $actaService) { $this->actaService = $actaService; }
 
-        $actas->transform(function ($acta) {
-            if ($acta->archivo_path) {
-                $acta->archivo_path = URL::temporarySignedRoute(
-                    'actas.publico',
-                    now()->addMinutes(180),
-                    ['acta' => $acta->id]
-                );
-            }
-            return $acta;
-        });
-
-        return response()->json($actas);
-    }
+    public function index() { return response()->json($this->actaService->getAllWithSignedUrls()); }
 }

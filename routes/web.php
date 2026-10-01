@@ -62,14 +62,9 @@ Route::middleware(['auth', 'role:Socio', 'password.changed'])->prefix('portal')-
     Route::get('/documentos/{documento}/descargar', [DocumentoController::class, 'show'])
          ->name('documentos.descargar');
 
-    Route::get('/actas', function () {
-        $actas = Acta::latest()->paginate(10);
-        return view('portal.actas.index', compact('actas'));
-    })->name('actas.index');
+    Route::get('/actas', [App\Http\Controllers\Portal\ActaController::class, 'index'])->name('actas.index');
 
-    Route::get('/actas/{acta}', function (Acta $acta) {
-        return view('portal.actas.show', compact('acta'));
-    })->name('actas.show');
+    Route::get('/actas/{acta}', [App\Http\Controllers\Portal\ActaController::class, 'show'])->name('actas.show');
 
     // Ruta de descarga para el portal web (usa sesión)
     Route::get('/actas/{acta}/descargar', [ActaController::class, 'descargarParaSocio'])

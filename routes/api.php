@@ -71,19 +71,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // --- RUTA PARA LAS TARJETAS DE RESUMEN DE LA DIRECTIVA ---
-    Route::get('/directivo/summary', function (SocioService $socioService) {
-        $totalSocios = $socioService->countAll(); 
-        $ingresos = Transaccion::where('tipo', 'Ingreso')->sum('monto');
-        $egresos = Transaccion::where('tipo', 'Egreso')->sum('monto');
-        $balance = $ingresos - $egresos;
-        $comunicadosRecientes = Comunicado::where('created_at', '>=', now()->subDays(30))->count();
-        $proximosEventos = Evento::where('fecha_evento', '>=', now())->count();
-
+    Route::get('/directivo/summary', function (
+        App\Services\SocioService $socioService,
+        App\Services\TransaccionService $transaccionService,
+        App\Services\EventoService $eventoService
+    ) {
+        $balances = $transaccionService->getGlobalBalance();
+        
         return response()->json([
-            'total_socios' => $totalSocios,
-            'balance' => $balance,
-            'comunicados_recientes' => $comunicadosRecientes,
-            'proximos_eventos' => $proximosEventos,
+            'total_socios' => $socioService->countAll(),
+            'balance' => $balances['balance'],
+            'comunicados_recientes' => App\Models\Comunicado::where('created_at', '>=', now()->subDays(30))->count(), // Deuda técnica final
+            'proximos_eventos' => $eventoService->countUpcoming(),
         ]);
     })->middleware('role:Presidente|Secretario|Tesorero');
 

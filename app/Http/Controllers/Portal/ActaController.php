@@ -1,19 +1,17 @@
 <?php
-
 namespace App\Http\Controllers\Portal;
-
 use App\Http\Controllers\Controller;
 use App\Models\Acta;
-use Illuminate\Http\Request;
-use Illuminate\View\View;
+use App\Services\ActaService;
 
 class ActaController extends Controller
 {
-    /**
-     * Display the specified resource.
-     */
-    public function show(Acta $acta): View
-    {
-        return view('portal.actas.show', compact('acta'));
+    protected ActaService $actaService;
+    public function __construct(ActaService $actaService) { $this->actaService = $actaService; }
+
+    public function index() {
+        $actas = $this->actaService->getPaginatedDesc(10);
+        return view('portal.actas.index', compact('actas'));
     }
+    public function show(Acta $acta) { return view('portal.actas.show', compact('acta')); }
 }

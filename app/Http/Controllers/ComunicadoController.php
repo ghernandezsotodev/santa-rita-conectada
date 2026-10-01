@@ -28,7 +28,6 @@ class ComunicadoController extends Controller
 
     public function store(ComunicadoRequest $request)
     {
-        // Obtenemos los datos validados y agregamos el usuario autenticado
         $data = $request->validated();
         $data['user_id'] = auth()->id();
 
