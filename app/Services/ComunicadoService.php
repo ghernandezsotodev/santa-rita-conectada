@@ -3,23 +3,30 @@
 namespace App\Services;
 
 use App\Models\Comunicado;
-use App\Models\Socio;
 use App\Models\User; 
 use App\Notifications\NuevoComunicadoNotification;
 use App\Notifications\PushComunicadoNotification; 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use App\Repositories\Contracts\ComunicadoRepositoryInterface;
+use App\Repositories\Contracts\SocioRepositoryInterface; // <-- Importamos la interfaz de Socio
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 class ComunicadoService
 {
     protected ComunicadoRepositoryInterface $comunicadoRepository;
+    protected SocioRepositoryInterface $socioRepository;
 
-    public function __construct(ComunicadoRepositoryInterface $comunicadoRepository)
-    {
+    /**
+     * Inyectamos ambos repositorios. El contenedor de Laravel se encarga de instanciarlos.
+     */
+    public function __construct(
+        ComunicadoRepositoryInterface $comunicadoRepository,
+        SocioRepositoryInterface $socioRepository
+    ) {
         $this->comunicadoRepository = $comunicadoRepository;
+        $this->socioRepository = $socioRepository;
     }
 
     public function getAllPaginated(int $perPage = 15): LengthAwarePaginator
@@ -58,9 +65,7 @@ class ComunicadoService
             $this->comunicadoRepository->update($comunicado, ['fecha_envio' => now()]);
         }
 
-        $sociosParaEmail = Socio::whereRaw("LOWER(estado) = 'activo'")
-                                ->whereNotNull('email')
-                                ->get();
+        $sociosParaEmail = $this->socioRepository->getActiveWithEmail();
 
         if ($sociosParaEmail->isNotEmpty()) {
             Notification::send($sociosParaEmail, new NuevoComunicadoNotification($comunicado));
@@ -77,7 +82,7 @@ class ComunicadoService
             Notification::send($usuariosParaPush, new PushComunicadoNotification($comunicado));
             Log::info('[ComunicadoService] Encolando Notificaciones Push (vía User) para ' . $usuariosParaPush->count() . ' usuarios.');
         } else {
-            Log::info('[ComunicadoService] No se encontraron usuarios (rol Socio) con fcm_token para notificar.');
+            Log::info('[ComunicadoService] No se encontraron usuarios con fcm_token para notificar.');
         }
     }
 }
