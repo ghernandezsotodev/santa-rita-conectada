@@ -13,6 +13,8 @@ use App\Repositories\Contracts\ActaRepositoryInterface;
 use App\Repositories\Eloquent\ActaRepository;
 use App\Repositories\Contracts\EventoRepositoryInterface;
 use App\Repositories\Eloquent\EventoRepository;
+use App\Repositories\Contracts\UserRepositoryInterface;
+use App\Repositories\Eloquent\UserRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TransaccionRepositoryInterface::class, TransaccionRepository::class);
         $this->app->bind(ActaRepositoryInterface::class, ActaRepository::class);
         $this->app->bind(EventoRepositoryInterface::class, EventoRepository::class);
+        $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
     }
 
     public function boot(): void
