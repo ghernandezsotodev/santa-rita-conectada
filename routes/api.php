@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\URL;
 
 use Illuminate\Support\Facades\Notification;
 use App\Services\ComunicadoService;
+use App\Services\SocioService;
 
 Route::post('/login', function (Request $request) {
     $request->validate([
@@ -70,9 +71,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // --- RUTA PARA LAS TARJETAS DE RESUMEN DE LA DIRECTIVA ---
-
-    Route::get('/directivo/summary', function () {
-        $totalSocios = Socio::count();
+    Route::get('/directivo/summary', function (SocioService $socioService) {
+        $totalSocios = $socioService->countAll(); 
         $ingresos = Transaccion::where('tipo', 'Ingreso')->sum('monto');
         $egresos = Transaccion::where('tipo', 'Egreso')->sum('monto');
         $balance = $ingresos - $egresos;
@@ -88,11 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
     })->middleware('role:Presidente|Secretario|Tesorero');
 
     // --- RUTA PARA LA LISTA DE SOCIOS (APP MÓVIL) ---
-    Route::get('/directivo/socios', function () {
-        // Obtenemos todos los socios, ordenados alfabéticamente por nombre
-        $socios = Socio::orderBy('nombre')->get();
-        return response()->json($socios);
-    })->middleware('role:Presidente|Secretario|Tesorero');
+    Route::get('/directivo/socios', [SocioController::class, 'index'])->middleware('role:Presidente|Secretario|Tesorero');
 
     // --- RUTA PARA EL HISTORIAL DE TESORERÍA (APP MÓVIL) ---
     // Ahora inyectamos la URL firmada para evitar el crash en Android
